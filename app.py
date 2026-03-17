@@ -96,6 +96,19 @@ def home():
     return redirect(url_for("equilibrium_question"))
 
 
+@app.route("/lti/debug")
+def lti_debug():
+    import traceback
+    info = {"config_path": LTI_CONFIG_PATH, "file_exists": os.path.exists(LTI_CONFIG_PATH)}
+    if info["file_exists"]:
+        try:
+            ToolConfJsonFile(LTI_CONFIG_PATH)
+            info["tool_conf"] = "OK"
+        except Exception:
+            info["tool_conf_error"] = traceback.format_exc()
+    return jsonify(info)
+
+
 # ── LTI 1.3 endpoints ────────────────────────────────────────────────────────
 
 @app.route("/lti/login", methods=["GET", "POST"])
