@@ -20,7 +20,12 @@ LTI_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "lti_config.json")
 
 
 def get_tool_conf():
-    return ToolConfJsonFile(LTI_CONFIG_PATH)
+    if not os.path.exists(LTI_CONFIG_PATH):
+        return None
+    try:
+        return ToolConfJsonFile(LTI_CONFIG_PATH)
+    except Exception:
+        return None
 
 
 def get_launch_data_storage():
@@ -91,8 +96,11 @@ def home():
 
 @app.route("/lti/login", methods=["GET", "POST"])
 def lti_login():
+    tool_conf = get_tool_conf()
+    if not tool_conf:
+        return "LTI not configured", 503
     return FlaskOIDCLogin(
-        request, get_tool_conf(),
+        request, tool_conf,
         launch_data_storage=get_launch_data_storage()
     ).enable_check_cookies().redirect(
         url_for("lti_launch", _external=True)
@@ -101,22 +109,25 @@ def lti_login():
 
 @app.route("/lti/launch", methods=["POST"])
 def lti_launch():
+    tool_conf = get_tool_conf()
+    if not tool_conf:
+        return "LTI not configured", 503
     message_launch = FlaskMessageLaunch(
-        request, get_tool_conf(),
+        request, tool_conf,
         launch_data_storage=get_launch_data_storage()
     )
     launch_data = message_launch.get_launch_data()
-
-    # Store LTI context in session for grade passback later
     session["lti_launch_id"] = message_launch.get_launch_id()
     session["lti_user_id"]   = launch_data.get("sub")
-
     return redirect(url_for("equilibrium_question"))
 
 
 @app.route("/lti/.well-known/jwks.json")
 def lti_jwks():
-    return jsonify(get_tool_conf().get_jwks())
+    tool_conf = get_tool_conf()
+    if not tool_conf:
+        return jsonify({"keys": []})
+    return jsonify(tool_conf.get_jwks())
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -222,7 +233,7 @@ def results():
     max_score   = 4  # one point per question
 
     # Send grade to Moodle if this was an LTI launch
-    if "lti_launch_id" in session:
+    if "lti_launch_id" in session and get_tool_conf():
         try:
             message_launch = FlaskMessageLaunch.from_cache(
                 session["lti_launch_id"], request, get_tool_conf(),
