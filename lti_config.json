@@ -1,0 +1,15 @@
+{
+  "https://YOUR_MOODLE_URL": [
+    {
+      "default": true,
+      "client_id": "YOUR_CLIENT_ID",
+      "auth_login_url": "https://YOUR_MOODLE_URL/mod/lti/auth.php",
+      "auth_token_url": "https://YOUR_MOODLE_URL/mod/lti/token.php",
+      "key_set_url": "https://YOUR_MOODLE_URL/mod/lti/certs.php",
+      "key_set": null,
+      "deployment_ids": ["YOUR_DEPLOYMENT_ID"],
+      "rsa_key": "PASTE_CONTENTS_OF_lti_private.pem_HERE",
+      "rsa_key_id": "microtest-key-1"
+    }
+  ]
+}

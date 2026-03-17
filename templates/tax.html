@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Question 2 — Unit Tax</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body, {delimiters:[{left:'\\(',right:'\\)',display:false},{left:'\\[',right:'\\]',display:true}]})"></script>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="page-wrapper">
+
+  <!-- Progress -->
+  <div class="progress-bar">
+    <div class="progress-steps">
+      <div class="step done"></div>
+      <div class="step active"></div>
+      <div class="step"></div>
+      <div class="step"></div>
+    </div>
+    Question 2 of 4
+  </div>
+
+  <!-- Header card -->
+  <div class="card">
+    <div class="question-header">
+      <div>
+        <div class="question-label">Microeconomics &mdash; Taxation</div>
+        <div class="question-title">Unit Tax on Suppliers</div>
+        <div class="question-instruction">A per-unit tax of <strong>t = {{ t }}</strong> is imposed on suppliers. Identify and click on the <strong>new market equilibrium</strong>.</div>
+      </div>
+      <p id="timer"></p>
+    </div>
+  </div>
+
+  <!-- Info grid -->
+  <div class="info-grid">
+    <div class="info-box">
+      <h3>Background</h3>
+      <p>
+        A per-unit tax collected from suppliers increases the cost of production for each unit sold.
+        The original demand curve and the original supply curve are shown, along with the
+        supply curve after the tax is applied.
+      </p>
+    </div>
+    <div class="info-box">
+      <h3>Model equations</h3>
+      <ul class="eq-list">
+        <li>
+          <span class="eq-label">Demand</span>
+          \( P = \dfrac{a - Q}{b} \)
+        </li>
+        <li>
+          <span class="eq-label">Supply</span>
+          \( P = \dfrac{Q + c}{d} \)
+        </li>
+        <li>
+          <span class="eq-label">Tax</span>
+          \( t = {{ t }} \) per unit
+        </li>
+        <li>
+          <span class="eq-label">Supply + tax</span>
+          \( P = \dfrac{Q + c}{d} + t \)
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Graph card -->
+  <div class="card" style="padding: 16px;">
+    <div id="graph"></div>
+  </div>
+
+  <!-- Feedback + buttons -->
+  <div class="card" style="gap:12px; display:flex; flex-direction:column;">
+    <div id="feedback"></div>
+    <div class="btn-row">
+      <button id="submitBtn" disabled>Submit</button>
+      <button id="nextBtn" disabled onclick="window.location.href='/utility'">Next question &rarr;</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const a = {{ a }};
+  const b = {{ b }};
+  const c = {{ c }};
+  const d = {{ d }};
+  const t = {{ t }};
+
+  // Original equilibrium: (a - Q)/b = (Q + c)/d
+  const pOrig = (a + c) / (b + d);
+  const qOrig = a - b * pOrig;
+
+  // Tax equilibrium: (a - Q)/b = (Q + c)/d + t
+  // → pStar = (a + c) / (b + d) + b*t / (b + d) = (a + c + b*t) / (b + d)  [consumer price]
+  // Wait: (a-Q)/b = (Q+c)/d + t → d(a-Q) = b(Q+c) + bdt → Q** = (da - bc - bdt)/(b+d)
+  // Actually: multiply through: d(a-Q) = b(Q+c+dt) → ... let me just solve directly
+  // (a-Q)/b = (Q+c)/d + t  →  d(a-Q) = b(Q+c) + bdt  →  Q** = (da - bc - bdt)/(b+d)
+  const qStar = (d * a - b * c - b * d * t) / (b + d);
+  const pStar = (a - qStar) / b;   // consumer price
+
+  // Axis ranges: wide enough for both equilibria, centred on the tax equilibrium
+  const xRef = Math.max(qOrig, qStar);
+  const xMax = Math.ceil(xRef * 2.3 / 10) * 10;
+  const yMax = Math.ceil(Math.max(pStar * 2.3, a / b) / 10) * 10;
+
+  const qVals = [], pDemand = [], pSupply = [], pSupplyTax = [];
+  for (let q = 0; q <= xMax; q++) {
+    qVals.push(q);
+    pDemand.push((a - q) / b);
+    pSupply.push((q + c) / d);
+    pSupplyTax.push((q + c) / d + t);
+  }
+
+  let selectedPoint = null;
+  let submitted = false;
+
+  Plotly.newPlot("graph", [
+    { x: qVals, y: pDemand,    mode: "lines", name: "Demand",
+      line: { color: "#000", width: 2 } },
+    { x: qVals, y: pSupply,    mode: "lines", name: "Supply (original)",
+      line: { color: "#000", width: 2, dash: "dot" } },
+    { x: qVals, y: pSupplyTax, mode: "lines", name: "Supply (after tax)",
+      line: { color: "#000", width: 2 } }
+  ], {
+    margin: { t: 10, r: 20, b: 50, l: 60 },
+    xaxis: { title: "Quantity (Q)", range: [0, xMax], gridcolor: "#f3f4f6", fixedrange: true },
+    yaxis: { title: "Price (P)", range: [0, yMax], gridcolor: "#f3f4f6", fixedrange: true },
+    plot_bgcolor: "#fff",
+    paper_bgcolor: "#fff",
+    legend: { orientation: "h", y: -0.15 },
+    hovermode: "closest",
+    dragmode: false
+  }, { responsive: true, scrollZoom: false, doubleClick: false, displayModeBar: false });
+
+  const graphDiv = document.getElementById("graph");
+  const feedback  = document.getElementById("feedback");
+  const submitBtn = document.getElementById("submitBtn");
+  const nextBtn   = document.getElementById("nextBtn");
+
+  graphDiv.on("plotly_click", function(data) {
+    if (submitted) return;
+    selectedPoint = { x: data.points[0].x, y: data.points[0].y };
+
+    const traces = graphDiv.data;
+    if (traces.length > 3) Plotly.deleteTraces("graph", traces.length - 1);
+
+    Plotly.addTraces("graph", {
+      x: [selectedPoint.x], y: [selectedPoint.y],
+      mode: "markers", name: "Your selection",
+      marker: { size: 14, color: "#f59e0b", symbol: "circle", line: { color: "#fff", width: 2 } }
+    });
+
+    feedback.className = "neutral";
+    feedback.textContent = `Selected: Q = ${selectedPoint.x.toFixed(1)},  P = ${selectedPoint.y.toFixed(1)}`;
+    submitBtn.disabled = false;
+  });
+
+  submitBtn.addEventListener("click", async () => {
+    if (!selectedPoint || submitted) return;
+    submitted = true;
+
+    const tolQ = 4, tolP = 4;
+    const correct =
+      Math.abs(selectedPoint.x - qStar) <= tolQ &&
+      Math.abs(selectedPoint.y - pStar) <= tolP;
+
+    feedback.className = correct ? "correct" : "incorrect";
+    feedback.textContent = correct
+      ? `Correct!  New equilibrium: Q* = ${qStar.toFixed(1)},  P* = ${pStar.toFixed(1)}`
+      : `Incorrect.  New equilibrium was: Q* = ${qStar.toFixed(1)},  P* = ${pStar.toFixed(1)}`;
+
+    Plotly.addTraces("graph", {
+      x: [qStar], y: [pStar],
+      mode: "markers", name: "New equilibrium",
+      marker: { size: 14, color: "#dc2626", symbol: "x", line: { color: "#dc2626", width: 3 } }
+    });
+
+    await fetch("/save_answer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        question_name: "tax_click",
+        parameters: { a, b, c, d, t },
+        response: selectedPoint,
+        correct: correct ? 1 : 0,
+        score: correct ? 1 : 0
+      })
+    });
+
+    submitBtn.disabled = true;
+    nextBtn.disabled = false;
+  });
+
+  // Timer
+  let timeLeft = 75;
+  const timerEl = document.getElementById("timer");
+  timerEl.textContent = `${timeLeft}s`;
+
+  const timer = setInterval(() => {
+    timeLeft--;
+    timerEl.textContent = `${timeLeft}s`;
+    if (timeLeft <= 10) timerEl.classList.add("warning");
+    if (timeLeft <= 0) {
+      clearInterval(timer);
+      submitBtn.disabled = true;
+      graphDiv.style.pointerEvents = "none";
+      if (!submitted) {
+        submitted = true;
+        feedback.className = "expired";
+        feedback.textContent = "Time expired. No answer recorded.";
+        nextBtn.disabled = false;
+      }
+    }
+  }, 1000);
+</script>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Question 2 — Negative Externality</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body, {delimiters:[{left:'\\(',right:'\\)',display:false},{left:'\\[',right:'\\]',display:true}]})"></script>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="page-wrapper">
+
+  <!-- Progress -->
+  <div class="progress-bar">
+    <div class="progress-steps">
+      <div class="step done"></div>
+      <div class="step done"></div>
+      <div class="step done"></div>
+      <div class="step active"></div>
+    </div>
+    Question 4 of 4
+  </div>
+
+  <!-- Header card -->
+  <div class="card">
+    <div class="question-header">
+      <div>
+        <div class="question-label">Microeconomics &mdash; Externalities</div>
+        <div class="question-title">Negative Production Externality</div>
+        <div class="question-instruction">Identify and click on the <strong>socially efficient equilibrium</strong> in the graph below.</div>
+      </div>
+      <p id="timer"></p>
+    </div>
+  </div>
+
+  <!-- Info grid -->
+  <div class="info-grid">
+    <div class="info-box">
+      <h3>Background</h3>
+      <p>
+        Some production activities generate side-effects that affect parties outside the transaction.
+        These spillover costs are captured by the marginal external damage (MED), which shifts the
+        social marginal cost above the private one.
+        The graph displays demand, private marginal cost (PMC), and social marginal cost (SMC).
+      </p>
+    </div>
+    <div class="info-box">
+      <h3>Model equations</h3>
+      <ul class="eq-list">
+        <li>
+          <span class="eq-label">Demand</span>
+          \( P = a - bQ \)
+        </li>
+        <li>
+          <span class="eq-label">PMC</span>
+          \( P = c + dQ \)
+        </li>
+        <li>
+          <span class="eq-label">MED</span>
+          \( \text{MED} = eQ \)
+        </li>
+        <li>
+          <span class="eq-label">SMC</span>
+          \( P = c + (d + e)Q \)
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Graph card -->
+  <div class="card" style="padding: 16px;">
+    <div id="graph"></div>
+  </div>
+
+  <!-- Feedback + buttons -->
+  <div class="card" style="gap:12px; display:flex; flex-direction:column;">
+    <div id="feedback"></div>
+    <div class="btn-row">
+      <button id="submitBtn" disabled>Submit</button>
+      <button id="finishBtn" disabled onclick="window.location.href='/results'">Finish &rarr;</button>
+    </div>
+  </div>
+
+</div><!-- end page-wrapper -->
+
+<script>
+  const a = {{ a }};
+  const b = {{ b }};
+  const c = {{ c }};
+  const d = {{ d }};
+  const e = {{ e }};
+
+  // Demand: P = a - bQ  |  PMC: P = c + dQ  |  MSC: P = c + (d+e)Q
+  const qVals = [], pDemand = [], pPMC = [], pMSC = [];
+  for (let q = 0; q <= 120; q++) {
+    qVals.push(q);
+    pDemand.push(a - b * q);
+    pPMC.push(c + d * q);
+    pMSC.push(c + (d + e) * q);
+  }
+
+  // Social optimum: Demand = MSC
+  const qStar = (a - c) / (b + d + e);
+  const pStar = a - b * qStar;
+
+  let selectedPoint = null;
+  let submitted = false;
+
+  // Market equilibrium (Demand = PMC) for range reference
+  const qMarket = (a - c) / (b + d);
+
+  // Axis ranges: centre the social optimum with ~40% padding each side
+  const xMax = Math.ceil(qMarket * 2.2 / 10) * 10;
+  const yMax = Math.ceil(Math.max(pStar * 2.2, a * 0.9) / 10) * 10;
+
+  Plotly.newPlot("graph", [
+    { x: qVals, y: pDemand, mode: "lines", name: "Demand",
+      line: { color: "#000", width: 2 } },
+    { x: qVals, y: pPMC,    mode: "lines", name: "Private MC (PMC)",
+      line: { color: "#000", width: 2 } },
+    { x: qVals, y: pMSC,    mode: "lines", name: "Social MC (SMC)",
+      line: { color: "#000", width: 2 } }
+  ], {
+    margin: { t: 10, r: 20, b: 50, l: 60 },
+    xaxis: { title: "Quantity (Q)", range: [0, xMax], gridcolor: "#f3f4f6", fixedrange: true },
+    yaxis: { title: "Price / Cost (P)", range: [0, yMax], gridcolor: "#f3f4f6", fixedrange: true },
+    plot_bgcolor: "#fff",
+    paper_bgcolor: "#fff",
+    legend: { orientation: "h", y: -0.15 },
+    hovermode: "closest",
+    dragmode: false
+  }, { responsive: true, scrollZoom: false, doubleClick: false, displayModeBar: false });
+
+  const graphDiv = document.getElementById("graph");
+  const feedback  = document.getElementById("feedback");
+  const submitBtn = document.getElementById("submitBtn");
+  const finishBtn = document.getElementById("finishBtn");
+
+  graphDiv.on("plotly_click", function(data) {
+    if (submitted) return;
+    selectedPoint = { x: data.points[0].x, y: data.points[0].y };
+
+    const traces = graphDiv.data;
+    if (traces.length > 3) Plotly.deleteTraces("graph", traces.length - 1);
+
+    Plotly.addTraces("graph", {
+      x: [selectedPoint.x], y: [selectedPoint.y],
+      mode: "markers", name: "Your selection",
+      marker: { size: 14, color: "#f59e0b", symbol: "circle", line: { color: "#fff", width: 2 } }
+    });
+
+    feedback.className = "neutral";
+    feedback.textContent = `Selected: Q = ${selectedPoint.x.toFixed(1)},  P = ${selectedPoint.y.toFixed(1)}`;
+    submitBtn.disabled = false;
+  });
+
+  submitBtn.addEventListener("click", async () => {
+    if (!selectedPoint || submitted) return;
+    submitted = true;
+
+    const tolQ = 4, tolP = 4;
+    const correct =
+      Math.abs(selectedPoint.x - qStar) <= tolQ &&
+      Math.abs(selectedPoint.y - pStar) <= tolP;
+
+    feedback.className = correct ? "correct" : "incorrect";
+    feedback.textContent = correct
+      ? `Correct!  Social optimum: Q* = ${qStar.toFixed(1)},  P* = ${pStar.toFixed(1)}`
+      : `Incorrect.  Social optimum was: Q* = ${qStar.toFixed(1)},  P* = ${pStar.toFixed(1)}`;
+
+    Plotly.addTraces("graph", {
+      x: [qStar], y: [pStar],
+      mode: "markers", name: "Social optimum",
+      marker: { size: 14, color: "#dc2626", symbol: "x", line: { color: "#dc2626", width: 3 } }
+    });
+
+    await fetch("/save_answer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        question_name: "externality_click",
+        parameters: { a, b, c, d, e },
+        response: selectedPoint,
+        correct: correct ? 1 : 0,
+        score: correct ? 1 : 0
+      })
+    });
+
+    submitBtn.disabled = true;
+    finishBtn.disabled = false;
+  });
+
+  // Timer
+  let timeLeft = 75;
+  const timerEl = document.getElementById("timer");
+  timerEl.textContent = `${timeLeft}s`;
+
+  const timer = setInterval(() => {
+    timeLeft--;
+    timerEl.textContent = `${timeLeft}s`;
+    if (timeLeft <= 10) timerEl.classList.add("warning");
+    if (timeLeft <= 0) {
+      clearInterval(timer);
+      submitBtn.disabled = true;
+      graphDiv.style.pointerEvents = "none";
+      if (!submitted) {
+        submitted = true;
+        feedback.className = "expired";
+        feedback.textContent = "Time expired. No answer recorded.";
+        finishBtn.disabled = false;
+      }
+    }
+  }, 1000);
+</script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+# Virtual environment
+.venv/
+
+# LTI private key - never commit this
+lti_private.pem
+lti_public.pem
+
+# Database
+data/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

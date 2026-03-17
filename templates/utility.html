@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Question 3 — Utility Maximization</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body, {delimiters:[{left:'\\(',right:'\\)',display:false},{left:'\\[',right:'\\]',display:true}]})"></script>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="page-wrapper">
+
+  <!-- Progress -->
+  <div class="progress-bar">
+    <div class="progress-steps">
+      <div class="step done"></div>
+      <div class="step done"></div>
+      <div class="step active"></div>
+      <div class="step"></div>
+    </div>
+    Question 3 of 4
+  </div>
+
+  <!-- Header card -->
+  <div class="card">
+    <div class="question-header">
+      <div>
+        <div class="question-label">Microeconomics &mdash; Consumer Theory</div>
+        <div class="question-title">Constrained Utility Maximization</div>
+        <div class="question-instruction">Identify and click on the point of <strong>constrained utility maximization</strong>.</div>
+      </div>
+      <p id="timer"></p>
+    </div>
+  </div>
+
+  <!-- Info grid -->
+  <div class="info-grid">
+    <div class="info-box">
+      <h3>Background</h3>
+      <p>
+        A consumer allocates income across two goods, \(x\) and \(y\), each at a given price.
+        The three curves represent different levels of utility; the straight line represents
+        the set of bundles the consumer can afford.
+        The consumer's income is \( I = {{ I }} \), with prices
+        \( P_x = {{ px }} \) and \( P_y = {{ py }} \).
+      </p>
+    </div>
+    <div class="info-box">
+      <h3>Model equations</h3>
+      <ul class="eq-list">
+        <li>
+          <span class="eq-label">Utility</span>
+          \( U = x \cdot y \)
+        </li>
+        <li>
+          <span class="eq-label">Budget</span>
+          \( P_x \, x + P_y \, y = I \)
+        </li>
+        <li>
+          <span class="eq-label">IC</span>
+          \( y = \dfrac{U}{x} \)
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Graph card -->
+  <div class="card" style="padding: 16px;">
+    <div id="graph"></div>
+  </div>
+
+  <!-- Feedback + buttons -->
+  <div class="card" style="gap:12px; display:flex; flex-direction:column;">
+    <div id="feedback"></div>
+    <div class="btn-row">
+      <button id="submitBtn" disabled>Submit</button>
+      <button id="nextBtn" disabled onclick="window.location.href='/externality'">Next question &rarr;</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const px = {{ px }};
+  const py = {{ py }};
+  const I  = {{ I }};
+
+  // Optimal bundle (Cobb-Douglas U=xy: x*=I/(2px), y*=I/(2py))
+  const xStar = I / (2 * px);
+  const yStar = I / (2 * py);
+  const uStar = xStar * yStar;
+
+  // Three utility levels: below, tangent, above budget line
+  const uLow  = uStar * 0.45;
+  const uMid  = uStar;
+  const uHigh = uStar * 1.65;
+
+  // Axis bounds
+  const xBudget = I / px;
+  const yBudget = I / py;
+  const xMax = xBudget * 1.3;
+  const yMax = yBudget * 1.3;
+
+  // Indifference curves: y = U/x
+  const xIC = [];
+  for (let x = 0.3; x <= xMax; x += 0.2) xIC.push(x);
+
+  function icY(x, U) {
+    const y = U / x;
+    return (y <= yMax * 1.1) ? y : null;
+  }
+
+  const yIC_low  = xIC.map(x => icY(x, uLow));
+  const yIC_mid  = xIC.map(x => icY(x, uMid));
+  const yIC_high = xIC.map(x => icY(x, uHigh));
+
+  // Clip out-of-range points (set to NaN so Plotly breaks the line)
+  function clip(ys) { return ys.map(y => (y === null || y > yMax) ? NaN : y); }
+
+  // Budget line
+  const xBL = [0, xBudget];
+  const yBL = [yBudget, 0];
+
+  let selectedPoint = null;
+  let submitted = false;
+
+  Plotly.newPlot("graph", [
+    { x: xIC, y: clip(yIC_low),  mode: "lines", name: "IC\u2081 (low U)",
+      line: { color: "#000", width: 2 } },
+    { x: xIC, y: clip(yIC_mid),  mode: "lines", name: "IC\u2082",
+      line: { color: "#000", width: 2 } },
+    { x: xIC, y: clip(yIC_high), mode: "lines", name: "IC\u2083 (high U)",
+      line: { color: "#000", width: 2 } },
+    { x: xBL, y: yBL, mode: "lines", name: "Budget line",
+      line: { color: "#000", width: 2, dash: "dash" } }
+  ], {
+    margin: { t: 10, r: 20, b: 50, l: 60 },
+    xaxis: { title: "Good x", range: [0, xMax], gridcolor: "#f3f4f6", fixedrange: true },
+    yaxis: { title: "Good y", range: [0, yMax], gridcolor: "#f3f4f6", fixedrange: true },
+    plot_bgcolor: "#fff",
+    paper_bgcolor: "#fff",
+    legend: { orientation: "h", y: -0.15 },
+    hovermode: "closest",
+    dragmode: false
+  }, { responsive: true, scrollZoom: false, doubleClick: false, displayModeBar: false });
+
+  const graphDiv = document.getElementById("graph");
+  const feedback  = document.getElementById("feedback");
+  const submitBtn = document.getElementById("submitBtn");
+  const nextBtn   = document.getElementById("nextBtn");
+
+  graphDiv.on("plotly_click", function(data) {
+    if (submitted) return;
+    selectedPoint = { x: data.points[0].x, y: data.points[0].y };
+
+    const traces = graphDiv.data;
+    if (traces.length > 4) Plotly.deleteTraces("graph", traces.length - 1);
+
+    Plotly.addTraces("graph", {
+      x: [selectedPoint.x], y: [selectedPoint.y],
+      mode: "markers", name: "Your selection",
+      marker: { size: 14, color: "#f59e0b", symbol: "circle", line: { color: "#fff", width: 2 } }
+    });
+
+    feedback.className = "neutral";
+    feedback.textContent = `Selected: x = ${selectedPoint.x.toFixed(2)},  y = ${selectedPoint.y.toFixed(2)}`;
+    submitBtn.disabled = false;
+  });
+
+  submitBtn.addEventListener("click", async () => {
+    if (!selectedPoint || submitted) return;
+    submitted = true;
+
+    const tolX = Math.max(1, xStar * 0.12);
+    const tolY = Math.max(1, yStar * 0.12);
+    const correct =
+      Math.abs(selectedPoint.x - xStar) <= tolX &&
+      Math.abs(selectedPoint.y - yStar) <= tolY;
+
+    feedback.className = correct ? "correct" : "incorrect";
+    feedback.textContent = correct
+      ? `Correct!  Optimal bundle: x* = ${xStar.toFixed(2)},  y* = ${yStar.toFixed(2)}`
+      : `Incorrect.  Optimal bundle was: x* = ${xStar.toFixed(2)},  y* = ${yStar.toFixed(2)}`;
+
+    Plotly.addTraces("graph", {
+      x: [xStar], y: [yStar],
+      mode: "markers", name: "Optimum",
+      marker: { size: 14, color: "#dc2626", symbol: "x", line: { color: "#dc2626", width: 3 } }
+    });
+
+    await fetch("/save_answer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        question_name: "utility_click",
+        parameters: { px, py, I },
+        response: selectedPoint,
+        correct: correct ? 1 : 0,
+        score: correct ? 1 : 0
+      })
+    });
+
+    submitBtn.disabled = true;
+    nextBtn.disabled = false;
+  });
+
+  // Timer
+  let timeLeft = 75;
+  const timerEl = document.getElementById("timer");
+  timerEl.textContent = `${timeLeft}s`;
+
+  const timer = setInterval(() => {
+    timeLeft--;
+    timerEl.textContent = `${timeLeft}s`;
+    if (timeLeft <= 10) timerEl.classList.add("warning");
+    if (timeLeft <= 0) {
+      clearInterval(timer);
+      submitBtn.disabled = true;
+      graphDiv.style.pointerEvents = "none";
+      if (!submitted) {
+        submitted = true;
+        feedback.className = "expired";
+        feedback.textContent = "Time expired. No answer recorded.";
+        nextBtn.disabled = false;
+      }
+    }
+  }, 1000);
+</script>
+</body>
+</html>
