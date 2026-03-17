@@ -16,7 +16,11 @@ app.secret_key = "change-this-secret-key"
 # In-memory cache for LTI launch data (use Redis in production)
 _cache = SimpleCache()
 
-LTI_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "lti_config.json")
+LTI_CONFIG_PATH = (
+    "/etc/secrets/lti_config.json"
+    if os.path.exists("/etc/secrets/lti_config.json")
+    else os.path.join(os.path.dirname(__file__), "lti_config.json")
+)
 
 
 def get_tool_conf():
