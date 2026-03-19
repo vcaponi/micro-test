@@ -75,7 +75,7 @@ def init_db():
 
 @app.before_request
 def ensure_candidate():
-    if request.endpoint in ("static", "lti_login", "lti_launch", "lti_jwks"):
+    if request.endpoint in ("static", "lti_login", "lti_launch", "lti_jwks", "lti_debug"):
         return
 
     if "candidate_id" not in session:
@@ -276,6 +276,7 @@ def results():
     }
 
 
+init_db()
+
 if __name__ == "__main__":
-    init_db()
     app.run(debug=True)
