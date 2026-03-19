@@ -6,7 +6,7 @@ import random
 from datetime import datetime, timezone
 
 from cachelib import SimpleCache
-from pylti1p3.contrib.flask import FlaskOIDCLogin, FlaskMessageLaunch, FlaskCacheDataStorage
+from pylti1p3.contrib.flask import FlaskOIDCLogin, FlaskMessageLaunch, FlaskCacheDataStorage, FlaskRequest
 from pylti1p3.tool_config import ToolConfDict
 from pylti1p3.grade import Grade
 
@@ -125,7 +125,7 @@ def lti_login():
     if not tool_conf:
         return "LTI not configured", 503
     return FlaskOIDCLogin(
-        request, tool_conf,
+        FlaskRequest(), tool_conf,
         launch_data_storage=get_launch_data_storage()
     ).enable_check_cookies().redirect(
         url_for("lti_launch", _external=True)
@@ -138,7 +138,7 @@ def lti_launch():
     if not tool_conf:
         return "LTI not configured", 503
     message_launch = FlaskMessageLaunch(
-        request, tool_conf,
+        FlaskRequest(), tool_conf,
         launch_data_storage=get_launch_data_storage()
     )
     launch_data = message_launch.get_launch_data()
