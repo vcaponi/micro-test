@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 from cachelib import SimpleCache
 from pylti1p3.contrib.flask import FlaskOIDCLogin, FlaskMessageLaunch, FlaskCacheDataStorage
-from pylti1p3.tool_config import ToolConfJsonFile
+from pylti1p3.tool_config import ToolConfDict
 from pylti1p3.grade import Grade
 
 app = Flask(__name__)
@@ -27,7 +27,15 @@ def get_tool_conf():
     if not os.path.exists(LTI_CONFIG_PATH):
         return None
     try:
-        return ToolConfJsonFile(LTI_CONFIG_PATH)
+        import json
+        with open(LTI_CONFIG_PATH) as f:
+            raw = json.load(f)
+        tool_conf = ToolConfDict(raw)
+        for iss, configs in raw.items():
+            for conf in configs:
+                client_id = conf.get("client_id")
+                tool_conf.set_private_key(iss, conf["rsa_key"], client_id=client_id)
+        return tool_conf
     except Exception:
         return None
 
@@ -102,8 +110,8 @@ def lti_debug():
     info = {"config_path": LTI_CONFIG_PATH, "file_exists": os.path.exists(LTI_CONFIG_PATH)}
     if info["file_exists"]:
         try:
-            ToolConfJsonFile(LTI_CONFIG_PATH)
-            info["tool_conf"] = "OK"
+            tc = get_tool_conf()
+            info["tool_conf"] = "OK" if tc else "returned None"
         except Exception:
             info["tool_conf_error"] = traceback.format_exc()
     return jsonify(info)
