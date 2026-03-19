@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Results</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="page-wrapper">
+
+  <div class="question-card" style="max-width:600px;margin:60px auto;">
+    <h1 style="font-size:1.6rem;margin-bottom:0.3rem;">Test Complete</h1>
+    <p style="color:#6b7280;margin-bottom:2rem;">Here is a summary of your answers.</p>
+
+    <div style="font-size:2rem;font-weight:700;text-align:center;margin-bottom:2rem;">
+      {{ total_score | int }} / {{ max_score }}
+    </div>
+
+    <table style="width:100%;border-collapse:collapse;font-size:0.95rem;">
+      <thead>
+        <tr style="border-bottom:2px solid #e5e7eb;">
+          <th style="text-align:left;padding:8px 4px;">Question</th>
+          <th style="text-align:center;padding:8px 4px;">Result</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in answers %}
+        <tr style="border-bottom:1px solid #f3f4f6;">
+          <td style="padding:10px 4px;">{{ row['question_name'] | replace('_click','') | replace('_',' ') | title }}</td>
+          <td style="text-align:center;padding:10px 4px;">
+            {% if row['correct'] %}
+              <span style="color:#16a34a;font-weight:600;">✓ Correct</span>
+            {% else %}
+              <span style="color:#dc2626;font-weight:600;">✗ Incorrect</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if not answers %}
+    <p style="text-align:center;color:#9ca3af;margin-top:2rem;">No answers recorded.</p>
+    {% endif %}
+  </div>
+
+</div>
+</body>
+</html>

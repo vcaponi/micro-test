@@ -12,6 +12,8 @@ from pylti1p3.grade import Grade
 
 app = Flask(__name__)
 app.secret_key = "change-this-secret-key"
+app.config["SESSION_COOKIE_SAMESITE"] = "None"
+app.config["SESSION_COOKIE_SECURE"] = True
 
 # In-memory cache for LTI launch data (use Redis in production)
 _cache = SimpleCache()
@@ -276,12 +278,11 @@ def results():
         except Exception as e:
             app.logger.warning("LTI grade passback failed: %s", e)
 
-    return {
-        "candidate_id": candidate_id,
-        "answers": [dict(row) for row in rows],
-        "total_score": total_score,
-        "max_score": max_score
-    }
+    return render_template("results.html",
+        answers=rows,
+        total_score=total_score,
+        max_score=max_score
+    )
 
 
 init_db()
